@@ -1,7 +1,6 @@
 package compiler
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 
@@ -23,13 +22,14 @@ type UserPolicy struct {
 	} `yaml:"rules"`
 }
 
-func readYaml(filePath string) []byte {
+// ReadYaml reads in yaml file
+func ReadYaml(filePath string) []byte {
 	// IS THIS REALLY A FILE PATH OR JUST FILE NAME. WHAT HAPPENS WHEN THE FILE IS NOT IN IMMEDIETE DIRECTORY
 	yamlFile, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		log.Fatalf("Error in reading yaml: %v", err)
 	}
-	fmt.Println("Read File Success")
+	// fmt.Println("Read File Success")
 	return yamlFile
 }
 
@@ -38,7 +38,7 @@ func parseYaml(file []byte, policy *UserPolicy) {
 	if err != nil {
 		log.Fatalf("Failed in parsing of yaml")
 	}
-	fmt.Println("Parse File Success")
+	// fmt.Println("Parse File Success")
 
 }
 
@@ -84,16 +84,17 @@ func astToCheckedExpr(checked *cel.Ast) *expr.CheckedExpr {
 	return checkedExpr
 }
 
-func compileYamltoRbac(filename string) pb.RBAC {
+// CompileYamltoRbac compiles yaml to rbac
+func CompileYamltoRbac(filename string) pb.RBAC {
 	// "user_policy.yaml"
-	yamlFile := readYaml(filename)
+	yamlFile := ReadYaml(filename)
 	var userPolicy UserPolicy
 	parseYaml(yamlFile, &userPolicy)
-	fmt.Println(userPolicy)
-	fmt.Println("____________________________________")
-	fmt.Println(" ")
+	// fmt.Println(userPolicy)
+	// fmt.Println("____________________________________")
+	// fmt.Println(" ")
 	env := createUserPolicyCelEnv()
-	fmt.Println("Finished CEL Environment starting RBAC Loop")
+	// fmt.Println("Finished CEL Environment starting RBAC Loop")
 
 	var rbac pb.RBAC
 	rbac.Action = pb.RBAC_Action(pb.RBAC_Action_value[userPolicy.Action])
@@ -128,8 +129,9 @@ func exprToProgram(env *cel.Env, condition *expr.Expr) *cel.Program {
 	return &program
 }
 
-func compile(inputFilename string, outputFilename string) {
-	rbac := compileYamltoRbac(inputFilename)
+// Compile takes in input file name and returns serialized output rbac proto
+func Compile(inputFilename string, outputFilename string) {
+	rbac := CompileYamltoRbac(inputFilename)
 	serialized, err := proto.Marshal(&rbac)
 	if err != nil {
 		log.Fatalf("Failed to Serialize RBAC Proto %v", err)

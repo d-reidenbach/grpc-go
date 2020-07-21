@@ -18,7 +18,7 @@ func TestParseEval(t *testing.T) {
 	testPolicies["admin access"] = "connection.uri_san_peer_certificate == 'cluster/ns/default/sa/admin'"
 	testPolicies["dev access"] = "request.url_path == '/pkg.service/dev' && connection.uri_san_peer_certificate == 'cluster/ns/default/sa/dev'"
 	env := createUserPolicyCelEnv()
-	rbac := compileYamltoRbac("user_policy.yaml")
+	rbac := CompileYamltoRbac("../user_policy.yaml")
 	// fmt.Println(rbac.String())
 	policies := rbac.Policies
 
@@ -59,10 +59,10 @@ func TestParseEval(t *testing.T) {
 }
 
 func TestSerialize(t *testing.T) {
-	input := "user_policy.yaml"
+	input := "../user_policy.yaml"
 	output := "test_rbac"
 
-	compile(input, output)
+	Compile(input, output)
 
 	serialRbac, readErr := ioutil.ReadFile(output)
 	if readErr != nil {
