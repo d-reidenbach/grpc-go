@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 
-	pb "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v2" // used to be v2
+	pb "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v3"
 	"github.com/golang/glog"
 	cel "github.com/google/cel-go/cel"
 	decls "github.com/google/cel-go/checker/decls"
@@ -54,12 +54,6 @@ func createUserPolicyCelEnv() *cel.Env {
 			decls.NewIdent("destination.address", decls.String, nil),
 			decls.NewIdent("destination.port", decls.Int, nil),
 			decls.NewIdent("connection.uri_san_peer_certificate", decls.String, nil)))
-	// ast := compile(env, `source.address.startsWith('1.1.1.') || request.headers['type'] == 'foo'`, decls.Bool)
-	// checked, iss := env.Check(ast)
-	// if iss != nil && iss.Err() != nil {
-	// 		glog.Exit(iss.Err())
-	// }
-	// program, _ := env.Program(checked)
 	return env
 }
 
@@ -74,13 +68,12 @@ func compileCel(env *cel.Env, condition string) *cel.Ast {
 	if iss.Err() != nil {
 		glog.Exit(iss.Err())
 	}
-	// Check the result type is a string.
+	// Check the result type is a Boolean.
 	if !proto.Equal(checked.ResultType(), decls.Bool) {
 		glog.Exitf(
 			"Got %v, wanted %v result type",
 			checked.ResultType(), decls.String)
 	}
-
 	return checked
 }
 func astToCheckedExpr(checked *cel.Ast) *expr.CheckedExpr {
@@ -88,9 +81,9 @@ func astToCheckedExpr(checked *cel.Ast) *expr.CheckedExpr {
 	if err != nil {
 		log.Fatalf("Failed Converting AST to Checked Express %v", err)
 	}
-	// checkedExpr := checked.Expr() // v2
 	return checkedExpr
 }
+
 func compileYamltoRbac(filename string) pb.RBAC {
 	// "user_policy.yaml"
 	yamlFile := readYaml(filename)
@@ -99,11 +92,9 @@ func compileYamltoRbac(filename string) pb.RBAC {
 	fmt.Println(userPolicy)
 	fmt.Println("____________________________________")
 	fmt.Println(" ")
-
 	env := createUserPolicyCelEnv()
-
 	fmt.Println("Finished CEL Environment starting RBAC Loop")
-	// rules := policy.Rules
+
 	var rbac pb.RBAC
 	rbac.Action = pb.RBAC_Action(pb.RBAC_Action_value[userPolicy.Action])
 	rbac.Policies = make(map[string]*pb.Policy)
@@ -113,19 +104,13 @@ func compileYamltoRbac(filename string) pb.RBAC {
 		name := rule.Name
 		condition := rule.Condition
 		var policy pb.Policy
-		// Check that the expression compiles and returns a String.
 		checked := compileCel(env, condition)
-
-		// checkedExpr := astToCheckedExpr(checked) // v3
-		// policy.CheckedCondition = checkedExpr // v3
-
-		checkedExpr := checked.Expr()  // v2
-		policy.Condition = checkedExpr // v2
-
+		checkedExpr := astToCheckedExpr(checked) // v3
+		policy.CheckedCondition = checkedExpr    // v3
+		// checkedExpr := checked.Expr()  // v2
+		// policy.Condition = checkedExpr // v2
 		rbac.Policies[name] = &policy
-
 	}
-
 	return rbac
 }
 
@@ -136,6 +121,7 @@ func exprToParsedExpr(condition *expr.Expr) *expr.ParsedExpr {
 
 // Converts an expression to a CEL program.
 func exprToProgram(env *cel.Env, condition *expr.Expr) *cel.Program {
+	// ONLY NEEDED FOR V2
 	// v3: can replace line with ast := cel.CheckedExprToAst(checkedExpr)
 	ast := cel.ParsedExprToAst(exprToParsedExpr(condition))
 	program, _ := env.Program(ast)
@@ -143,11 +129,10 @@ func exprToProgram(env *cel.Env, condition *expr.Expr) *cel.Program {
 }
 
 func compile(inputFilename string, outputFilename string) {
-	// rbac := compileYamltoRbac(inputFilename)
-	// serialized, err := proto.Marshal(pb.ProtoReflect(rbac))
-	// if err != nil {
-	// 	log.Fatalf("Failed to Serialize RBAC Proto %v", err)
-	// }
-	// ioutil.WriteFile(outputFilename, serialized, 0644)
-
+	rbac := compileYamltoRbac(inputFilename)
+	serialized, err := proto.Marshal(&rbac)
+	if err != nil {
+		log.Fatalf("Failed to Serialize RBAC Proto %v", err)
+	}
+	ioutil.WriteFile(outputFilename, serialized, 0644)
 }
