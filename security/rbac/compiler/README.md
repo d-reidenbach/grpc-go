@@ -1,4 +1,5 @@
-How to write a User Defined Policy?
+# User Policy Compiler
+
 The User Defined Policy is written in a specific yaml format. An example Yaml File is listed below.
 
 action: ALLOW
@@ -26,7 +27,7 @@ The second line specifies that you will now begin listing the rules for your pol
     If the CEL expression is too long it can be broken up onto the next line so long as the continuation of the statement is indented once like in the above example.
     
 
-What are the allowed fields one can create a policy using?
+# What are the allowed fields one can create a policy using?
 
     request.url_path | string | The path portion of the URL in the form of "/packageName.serviceName/methodName".
 
@@ -49,13 +50,13 @@ What are the allowed fields one can create a policy using?
 
 
 
-How to write an Expression 
+# How to write an Expression 
 
 For every condition you want to construct a statement involving the above approved fields that results in an outcome of True or False.
 Use common logical operators such as and, or, less than, in, equals to construct statements involving the above attribute that your security policy depends on.
 See the Language Definition for specific instruction in how to format expressions specifically to CEL.
 
-How to use the Compiler?
+# How to use the Compiler?
 Start with accessing the directory of the grpc_authz_compiler.go which is within grpc-go/security/rbac/compiler/main
 
 From there use:
