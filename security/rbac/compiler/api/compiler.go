@@ -13,6 +13,8 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// go down to 0.9.6 remove checked go back to v2 for that and then put as sub module under rbac
+
 // UserPolicy is the user policy
 type UserPolicy struct {
 	Action string `yaml:"action"`
