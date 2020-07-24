@@ -4,7 +4,7 @@ import (
 	"io/ioutil"
 	"log"
 
-	pb "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v3"
+	pb "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v2" // v3
 	"github.com/golang/glog"
 	cel "github.com/google/cel-go/cel"
 	decls "github.com/google/cel-go/checker/decls"
@@ -12,8 +12,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gopkg.in/yaml.v2"
 )
-
-// go down to 0.9.6 remove checked go back to v2 for that and then put as sub module under rbac
 
 // UserPolicy is the user policy
 type UserPolicy struct {
@@ -26,12 +24,10 @@ type UserPolicy struct {
 
 // ReadYaml reads in yaml file
 func ReadYaml(filePath string) []byte {
-	// IS THIS REALLY A FILE PATH OR JUST FILE NAME. WHAT HAPPENS WHEN THE FILE IS NOT IN IMMEDIETE DIRECTORY
 	yamlFile, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		log.Fatalf("Error in reading yaml: %v", err)
 	}
-	// fmt.Println("Read File Success")
 	return yamlFile
 }
 
@@ -40,8 +36,6 @@ func parseYaml(file []byte, policy *UserPolicy) {
 	if err != nil {
 		log.Fatalf("Failed in parsing of yaml")
 	}
-	// fmt.Println("Parse File Success")
-
 }
 
 func createUserPolicyCelEnv() *cel.Env {
@@ -88,15 +82,10 @@ func astToCheckedExpr(checked *cel.Ast) *expr.CheckedExpr {
 
 // CompileYamltoRbac compiles yaml to rbac
 func CompileYamltoRbac(filename string) pb.RBAC {
-	// "user_policy.yaml"
 	yamlFile := ReadYaml(filename)
 	var userPolicy UserPolicy
 	parseYaml(yamlFile, &userPolicy)
-	// fmt.Println(userPolicy)
-	// fmt.Println("____________________________________")
-	// fmt.Println(" ")
 	env := createUserPolicyCelEnv()
-	// fmt.Println("Finished CEL Environment starting RBAC Loop")
 
 	var rbac pb.RBAC
 	rbac.Action = pb.RBAC_Action(pb.RBAC_Action_value[userPolicy.Action])
@@ -108,10 +97,10 @@ func CompileYamltoRbac(filename string) pb.RBAC {
 		condition := rule.Condition
 		var policy pb.Policy
 		checked := compileCel(env, condition)
-		checkedExpr := astToCheckedExpr(checked) // v3
-		policy.CheckedCondition = checkedExpr    // v3
-		// checkedExpr := checked.Expr()  // v2
-		// policy.Condition = checkedExpr // v2
+		// checkedExpr := astToCheckedExpr(checked) // v3
+		// policy.CheckedCondition = checkedExpr    // v3
+		checkedExpr := checked.Expr()  // v2
+		policy.Condition = checkedExpr // v2
 		rbac.Policies[name] = &policy
 	}
 	return rbac

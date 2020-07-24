@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	pb "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v3"
-	cel "github.com/google/cel-go/cel"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -28,17 +27,17 @@ func TestParseEval(t *testing.T) {
 		testAst := compileCel(env, testPolicy)
 		testProgram, _ := env.Program(testAst)
 
-		// expr := rbacPolicy.Condition
-		expr := rbacPolicy.CheckedCondition
-		// program := exprToProgram(env, expr)
-		program, _ := env.Program(cel.CheckedExprToAst(expr))
+		expr := rbacPolicy.Condition
+		// expr := rbacPolicy.CheckedCondition v3
+		program := exprToProgram(env, expr)
+		// program, _ := env.Program(cel.CheckedExprToAst(expr)) v3
 
 		vars := map[string]interface{}{
 			"request.url_path":                    "/pkg.service/test",
 			"connection.uri_san_peer_certificate": "cluster/ns/default/sa/admin",
 		}
 
-		got, _, gotErr := program.Eval(vars) //(*program).Eval(vars)
+		got, _, gotErr := (*program).Eval(vars) //(*program).Eval(vars)
 		if gotErr != nil {
 			t.Errorf("Error in evaluating CEL program %s", gotErr.Error())
 		}
@@ -87,17 +86,17 @@ func TestSerialize(t *testing.T) {
 		testAst := compileCel(env, testPolicy)
 		testProgram, _ := env.Program(testAst)
 
-		// expr := rbacPolicy.Condition
-		expr := rbacPolicy.CheckedCondition
-		// program := exprToProgram(env, expr)
-		program, _ := env.Program(cel.CheckedExprToAst(expr))
+		expr := rbacPolicy.Condition
+		// expr := rbacPolicy.CheckedCondition v3
+		program := exprToProgram(env, expr)
+		// program, _ := env.Program(cel.CheckedExprToAst(expr)) v3
 
 		vars := map[string]interface{}{
 			"request.url_path":                    "/pkg.service/test",
 			"connection.uri_san_peer_certificate": "cluster/ns/default/sa/admin",
 		}
 
-		got, _, gotErr := program.Eval(vars) //(*program).Eval(vars)
+		got, _, gotErr := (*program).Eval(vars) //(*program).Eval(vars)
 		if gotErr != nil {
 			t.Errorf("Error in evaluating CEL program %s", gotErr.Error())
 		}
